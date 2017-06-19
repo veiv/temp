@@ -1,0 +1,26 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: movie-deployment
+spec:
+  replicas: 2 # tells deployment to run 2 pods matching the template
+  template: # template definition for a pod
+    metadata:
+      # the name is not included in the meta data as a unique name is
+      # generated from the deployment name
+      labels:
+        app: movie
+    spec:
+      containers:
+      - name: movie
+        image: ansjin/movieapp
+        ports:
+        - containerPort: 80
+          name: http-server
+        resources:
+          limits:
+            cpu: 200m
+            memory: 400Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
