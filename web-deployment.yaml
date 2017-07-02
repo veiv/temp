@@ -17,3 +17,10 @@ spec:
         ports:
         - containerPort: 80
           name: http-server
+        resources:
+          limits:
+            cpu: 200m
+            memory: 400Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
