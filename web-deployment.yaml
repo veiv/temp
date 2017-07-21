@@ -1,5 +1,5 @@
-apiVersion: apps/v1beta1
-kind: Deployment
+apiVersion: v1
+kind: ReplicationController
 metadata:
   name: movie-deployment
 spec:
@@ -15,8 +15,9 @@ spec:
       - name: movie
         image: ansjin/movieapp
         ports:
-        - containerPort: 80
-          name: http-server
+        - name: movie
+          containerPort: 80
+          hostPort: 80
         resources:
           limits:
             cpu: 200m
