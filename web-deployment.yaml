@@ -17,10 +17,11 @@ spec:
         ports:
         - name: movie
           containerPort: 80
+          hostPort: 80
         resources:
           limits:
             cpu: 200m
             memory: 400Mi
           requests:
-            cpu: 50m
+            cpu: 100m
             memory: 200Mi
