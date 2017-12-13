@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
       - name: movie
-        image: ansjin/movieapp:google
+        image: ansjin/movieapp:google1
         ports:
         - name: movie
           containerPort: 80
