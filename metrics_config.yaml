@@ -1,3 +1,15 @@
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: system:aggregated-metrics-reader
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+rules:
+- apiGroups: ["metrics.k8s.io"]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
@@ -6,7 +18,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: cluster-admin
+  name: system:auth-delegator
 subjects:
 - kind: ServiceAccount
   name: metrics-server
@@ -20,11 +32,12 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: cluster-admin
+  name: extension-apiserver-authentication-reader
 subjects:
 - kind: ServiceAccount
   name: metrics-server
   namespace: kube-system
+---
 apiVersion: apiregistration.k8s.io/v1beta1
 kind: APIService
 metadata:
@@ -38,38 +51,6 @@ spec:
   insecureSkipTLSVerify: true
   groupPriorityMinimum: 100
   versionPriority: 100
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: metrics-server
-  namespace: kube-system
----
-apiVersion: extensions/v1beta1
-kind: Deployment
-metadata:
-  name: metrics-server
-  namespace: kube-system
-  labels:
-    k8s-app: metrics-server
-spec:
-  selector:
-    matchLabels:
-      k8s-app: metrics-server
-  template:
-    metadata:
-      name: metrics-server
-      labels:
-        k8s-app: metrics-server
-    spec:
-      serviceAccountName: metrics-server
-      containers:
-      - name: metrics-server
-        image: gcr.io/google_containers/metrics-server-amd64:v0.2.0
-        imagePullPolicy: Always
-        command:
-        - /metrics-server
-        - --source=kubernetes.summary_api:''
 ---
 apiVersion: v1
 kind: Service
@@ -96,15 +77,7 @@ rules:
   resources:
   - pods
   - nodes
-  - namespaces
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - "extensions"
-  resources:
-  - deployments
+  - nodes/stats
   verbs:
   - get
   - list
@@ -121,4 +94,45 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: metrics-server
+  namespace: kube-system 
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: metrics-server
   namespace: kube-system
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: metrics-server
+  namespace: kube-system
+  labels:
+    k8s-app: metrics-server
+spec:
+  selector:
+    matchLabels:
+      k8s-app: metrics-server
+  template:
+    metadata:
+      name: metrics-server
+      labels:
+        k8s-app: metrics-server
+    spec:
+      serviceAccountName: metrics-server
+      volumes:
+      # mount in tmp so we can safely use from-scratch images and/or read-only containers
+      - name: tmp-dir
+        emptyDir: {}
+      containers:
+      - name: metrics-server
+        image: k8s.gcr.io/metrics-server-amd64:v0.3.1
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: tmp-dir
+          mountPath: /tmp
+        command:
+          - /metrics-server
+          - --metric-resolution=30s
+          - --kubelet-insecure-tls
+          - --kubelet-preferred-address-types=InternalIP,Hostname,InternalDNS,ExternalDNS,ExternalIPm
