@@ -68,11 +68,11 @@ spec:
           protocol: TCP
         resources:
           limits:
-            cpu: 500m
-            memory: 500Mi
+            cpu: 850m
+            memory: 850Mi
           requests:
-            cpu: 500m
-            memory: 500Mi
+            cpu: 850m
+            memory: 850Mi
 # ------------------- movieapp Service ------------------- #
 ---
 kind: Service
